@@ -26,7 +26,7 @@ You can install the dependencies with:
 
 ```bash
 pip install numpy pandas scipy
-
+```
 ## How to Run
 
 All scripts are standalone and can be run with:
@@ -36,3 +36,19 @@ python table2_gender.py
 python table4_sex_stratified.py
 python table5_regional.py
 python table6_MCsim_BrS_ascertainment.py
+```
+Optional arguments (where supported):
+
+--n-iter — Number of Monte Carlo iterations
+
+--seed   — Random seed for reproducibility
+
+## Reproducibility 
+
+All scripts use fixed random seeds (default = 42).
+Output files are saved in an output/ directory created automatically by each script.
+Scripts are designed to be run independently.
+
+## License
+
+This project is licensed under the MIT License.
