@@ -24,6 +24,8 @@ All scripts are designed for full reproducibility of the tables and figures in t
 | `table5_regional.py` | **Table 5** | Regionally stratified prevalence correction using observed prevalences from Vutthikraivit et al. 2018. Applies Primary (S₂ = 0.66) and Alternate (S₂ = 0.58) lead sensitivity scenarios consistently with the main analysis. | Vutthikraivit et al. 2018 meta-analysis | Console table + `output/table_5_regional.csv` |
 | `table6_MCsim_BrS_ascertainment.py` | **Table 6** | Hierarchical Monte Carlo simulation of BrS ascertainment (150,000 simulated carriers). Models heterogeneous detection probabilities and realistic ECG follow-up patterns. Includes patient classification (Always T1 / Dynamic / Never T1) and both uncensored and censored ascertainment. | Daw et al. 2022 + manuscript parameters | Console summary + Excel file (`table_6_HMCsim_BrS_ascertainment.xlsx`) |
 
+> **Note:** Running the scripts will automatically generate output files (CSV/Excel) inside an `output/` folder. These files are not included in the repository.
+
 ## Requirements
 
 - Python ≥ 3.10
