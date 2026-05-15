@@ -43,7 +43,7 @@ pip install numpy pandas scipy
 All scripts are standalone and can be run with:
 
 ```bash
-python table2_gender.py
+python table2_psa_BrS.py
 python table4_sex_stratified.py
 python table5_regional.py
 python table6_MCsim_BrS_ascertainment.py
