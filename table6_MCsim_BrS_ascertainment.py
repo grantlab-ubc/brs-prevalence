@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Hierarchical Monte Carlo Simulation of BrS Ascertainment
-(150,000 simulated carriers)
+(50,000,000 simulated carriers)
 
 This script reproduces the key metrics for Table 6 in the manuscript using a
 heterogeneous probability model for Brugada Type 1 ECG detection.
@@ -34,7 +34,7 @@ Key Outputs per Scenario
   out) for simulating Holter or intensive monitoring scenarios. 
 Parameters
 ----------
-- N_PATIENTS     = 150,000
+- N_PATIENTS     = 50,000,000
 - SEED           = 42
 - Beta(α=0.27, β=1.08) for base p_i
 - Negative Binomial for realistic n_i (used in Censored column)
@@ -51,6 +51,7 @@ Output
 import os
 import numpy as np
 import pandas as pd
+from concurrent.futures import ProcessPoolExecutor
 
 #%% User inputs
 
@@ -60,7 +61,7 @@ OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 EXCEL_FILE_NAME = "table_6_HMCsim_BrS_ascertainment.xlsx"
 SEED = 42
-N_PATIENTS = 150_000
+N_PATIENTS = 50_000_000
 
 # Set up ECG modelling
 N_MODEL = "negative_binomial"
@@ -120,6 +121,19 @@ p_map = {
     "Female Standard": p_female,
     "Male High": p_male_high,
     "Female High": p_female_high,
+}
+
+CORRECTION_FACTOR_MAP = {
+    "Standard": "–",
+    "Global": "–",
+    "High": "1.515 (1/S₂)",
+    "Male": "1.55 (S₁ᵐ / S₁)",
+    "Male High": "2.35 (S₁ᵐ / (S₁ × S₂))",
+    "Male Standard": "1.55 (S₁ᵐ / S₁)",
+    "Female": "0.575 (S₁ᶠ / S₁)",
+    "Female High": "0.87 (S₁ᶠ / (S₁ × S₂))",
+    "Female Standard": "0.575 (S₁ᶠ / S₁)",
+    "Asia": "0.85 (S₂ᴀsia / S₂)",
 }
 
 # Summary options
@@ -461,8 +475,8 @@ def build_reptable_style_dataframe(
     # - Always T1: first ECG positive
     # - Dynamic: later first positive, but detected within observed window
     # - Never T1: not detected within observed window
-    always_t1 = (t_first == 1)
-    dynamic_t1 = (t_first > 1) & (t_first <= n_i)
+    always_t1 = df_patients["always_type1"]
+    dynamic_t1 = df_patients["dynamic"]
     never_t1 = (t_first > n_i)
 
     row = {
@@ -500,11 +514,37 @@ def write_excel(df_reptable: pd.DataFrame, df_summary: pd.DataFrame, df_ascertai
             df_patients.to_excel(writer, sheet_name="patients", index=False)
 
 
+def simulate_scenario_wrapper(scenario: dict, scenario_index: int, p_i_external: np.ndarray) -> tuple:
+    """Wrapper function for parallel processing of a single scenario on CPU."""
+    df_patients = simulate_cohort(scenario, scenario_index, p_i_external=p_i_external)
+
+    max_curve_n = MAX_N if MAX_N is not None else 40
+    df_asc_primary = cumulative_ascertainment_by_n(
+        df_patients, max_curve_n, PRIMARY_ASCERTAINMENT_MODE
+    )
+    df_asc_secondary = cumulative_ascertainment_by_n(
+        df_patients, max_curve_n, SECONDARY_ASCERTAINMENT_MODE
+    )
+
+    df_asc_primary["scenario"] = scenario["label"]
+    df_asc_secondary["scenario"] = scenario["label"]
+
+    df_summary = build_summary_dataframe(df_patients, df_asc_primary, df_asc_secondary, scenario)
+    df_reptable = build_reptable_style_dataframe(
+        df_patients=df_patients,
+        scenario_label=scenario["label"],
+        correction_label=CORRECTION_FACTOR_MAP.get(scenario["label"], "–"),
+        ascertainment_n=MAX_N,
+    )
+
+    return df_patients, df_asc_primary, df_asc_secondary, df_summary, df_reptable, scenario["label"]
+
+
 #%%
 
 
 def run_simulation() -> dict[str, pd.DataFrame]:
-    """ Main loop with nice console output """
+    """ Main loop with nice console output (now parallelized across scenarios) """
     print("=" * 90)
     print("Reproducing Table 6: Hierarchical Monte Carlo Simulation of BrS Ascertainment")
     print("=" * 90)
@@ -519,20 +559,8 @@ def run_simulation() -> dict[str, pd.DataFrame]:
     print(f"  • S₁_male / S₁_female        : {s1_male} / {s1_female}")
 
     print("\nScenarios being simulated:")
-    correction_factor_map = {
-        "Standard": "–",
-        "Global": "–",
-        "High": "1.515 (1/S₂)",
-        "Male": "1.55 (S₁ᵐ / S₁)",
-        "Male High": "2.35 (S₁ᵐ / (S₁ × S₂))",
-        "Male Standard": "1.55 (S₁ᵐ / S₁)",
-        "Female": "0.575 (S₁ᶠ / S₁)",
-        "Female High": "0.87 (S₁ᶠ / (S₁ × S₂))",
-        "Female Standard": "0.575 (S₁ᶠ / S₁)",
-        "Asia": "0.85 (S₂ᴀsia / S₂)",
-    }
     for s in P_SCENARIOS:
-        cf = correction_factor_map.get(s["label"], "–")
+        cf = CORRECTION_FACTOR_MAP.get(s["label"], "–")
         print(f"  • {s['label']:<18} → Correction factor: {cf}")
 
     print("\nNote on 'Censored Ascertainment':")
@@ -542,43 +570,33 @@ def run_simulation() -> dict[str, pd.DataFrame]:
     print("  real-world follow-up patterns where most patients do not receive")
     print("  30+ serial ECGs).\n")
 
-    print("Running simulation...")
+    print("Running simulation in parallel across scenarios...")
     print("-" * 90)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     all_patients, all_ascertainment, all_summary, all_reptable = [], [], [], []
     max_curve_n = MAX_N if MAX_N is not None else 40
 
-    for scenario_index, scenario in enumerate(P_SCENARIOS):
-        label = scenario["label"]
-        p_i_external = p_map[label]
+    n_workers = min(len(P_SCENARIOS), os.cpu_count() or 4)
+    print(f"  Using up to {n_workers} parallel CPU workers")
 
-        df_patients = simulate_cohort(scenario, scenario_index, p_i_external=p_i_external)
+    tasks = [(scenario, scenario_index, p_map[scenario["label"]]) 
+             for scenario_index, scenario in enumerate(P_SCENARIOS)]
 
-        df_asc_primary = cumulative_ascertainment_by_n(
-            df_patients, max_curve_n, PRIMARY_ASCERTAINMENT_MODE
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        results = executor.map(
+            simulate_scenario_wrapper,
+            [t[0] for t in tasks],   # scenarios (in P_SCENARIOS order)
+            [t[1] for t in tasks],   # scenario_index
+            [t[2] for t in tasks]    # p_i_external
         )
-        df_asc_secondary = cumulative_ascertainment_by_n(
-            df_patients, max_curve_n, SECONDARY_ASCERTAINMENT_MODE
-        )
-
-        df_asc_primary["scenario"] = label
-        df_asc_secondary["scenario"] = label
-
-        df_summary = build_summary_dataframe(df_patients, df_asc_primary, df_asc_secondary, scenario)
-        df_reptable = build_reptable_style_dataframe(
-            df_patients=df_patients,
-            scenario_label=label,
-            correction_label=correction_factor_map.get(label, "–"),
-            ascertainment_n=MAX_N,
-        )
-
-        all_patients.append(df_patients)
-        all_ascertainment.extend([df_asc_primary, df_asc_secondary])
-        all_summary.append(df_summary)
-        all_reptable.append(df_reptable)
-
-        print(f"  ✓ Completed: {label}")
+        for res in results:
+            df_patients, df_asc_primary, df_asc_secondary, df_summary, df_reptable, label = res
+            all_patients.append(df_patients)
+            all_ascertainment.extend([df_asc_primary, df_asc_secondary])
+            all_summary.append(df_summary)
+            all_reptable.append(df_reptable)
+            print(f"  ✓ Completed: {label}")
 
     # Combine results
     df_patients_all = pd.concat(all_patients, ignore_index=True)
@@ -590,7 +608,7 @@ def run_simulation() -> dict[str, pd.DataFrame]:
                 os.path.join(OUTPUT_DIR, EXCEL_FILE_NAME))
 
     print("\n" + "=" * 90)
-    print("Table 6 Simulation Complete")
+    print("Table 6 Simulation Complete (parallelized)")
     print("=" * 90)
 
     # Print the main report table
