@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Brugada Syndrome Prevalence Reappraisal
-Probabilistic Sensitivity Analysis (Monte Carlo) — Table 2 Reproduction
+Probabilistic Sensitivity Analysis for Brugada Syndrome Prevalence Reappraisal
 
 This script reproduces the primary two-factor correction model and all
-complementary scenarios reported in Table 2 of the manuscript:
+complementary scenarios reported in Supplementary Table 9 of the manuscript:
 
 "Potential Underestimation of Brugada Syndrome Prevalence:
  A Quantitative Reappraisal of Diagnostic Sensitivity Limitations"
