@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Brugada Syndrome — Regionally Stratified Prevalence (Table 5)
+Brugada Syndrome — Regionally Stratified Prevalence (Supplementary Table 4)
 
 Reproduces regional corrected prevalence using:
 - Observed prevalences from Vutthikraivit et al. 2018 meta-analysis
@@ -139,7 +139,7 @@ def main():
         })
 
     df = pd.DataFrame(rows)
-    csv_path = os.path.join(output_dir, "table_5_regional.csv")
+    csv_path = os.path.join(output_dir, "regional.csv")
     df.to_csv(csv_path, index=False)
 
     print("\n" + "=" * 95)
