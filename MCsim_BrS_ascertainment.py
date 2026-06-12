@@ -45,7 +45,7 @@ Parameters
 Output
 ------
 - Clean summary table printed to console
-- CSV saved to output/table_6_simulation.csv
+- CSV saved to output/simulation.csv
 """
 
 import os
@@ -59,7 +59,7 @@ from concurrent.futures import ProcessPoolExecutor
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-EXCEL_FILE_NAME = "table_6_HMCsim_BrS_ascertainment.xlsx"
+EXCEL_FILE_NAME = "HMCsim_BrS_ascertainment.xlsx"
 SEED = 42
 N_PATIENTS = 50_000_000
 
