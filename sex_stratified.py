@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Brugada Syndrome — Sex-Stratified Underascertainment (Table 4)
+Brugada Syndrome — Sex-Stratified Underascertainment (Supplemental Table 3)
 
 Reproduces the sex-specific spontaneous Type 1 rates (S1) from BHF-RASE
 (Scrocco et al. 2024) and quantifies the male vs female gap in diagnostic
@@ -24,7 +24,7 @@ This script:
 2. Uses Monte Carlo (95% CrIs) to propagate uncertainty into correction factors.
 3. Reports key detection yield metrics from simulation (median ECGs needed,
    % detected after 9 ECGs).
-4. Outputs clean results + CSV for Table 4.
+4. Outputs clean results + CSV.
 
 Focus: Male vs Female underascertainment gap.
 
@@ -175,7 +175,7 @@ def main():
     ]
 
     df = pd.DataFrame(rows)
-    csv_path = os.path.join(output_dir, "table_4_sex_stratified.csv")
+    csv_path = os.path.join(output_dir, "sex_stratified.csv")
     df.to_csv(csv_path, index=False)
 
     print("\n" + "=" * 80)
