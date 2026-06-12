@@ -6,7 +6,7 @@ This repository contains the Python scripts used to generate the results present
 
 ## Authors
 
-**Ashton Christy**<sup>1</sup>, **Luke Melo**<sup>1</sup>, **Giuseppe Ciconte**<sup>2</sup>, **Luigi Anastasia**<sup>3</sup>, **Edward Grant**<sup>1</sup>, **Carlo Pappone**<sup>2,4</sup>,
+**Luigi Anastasia**<sup>3</sup>, **Ashton Christy**<sup>1</sup>, **Luke Melo**<sup>1</sup>, **Giuseppe Ciconte**<sup>2</sup>, **Edward Grant**<sup>1</sup>, **Carlo Pappone**<sup>2,4</sup>,
 
 <sup>1</sup> Department of Chemistry, University of British Columbia, Vancouver, BC, Canada  
 <sup>2</sup> Arrhythmia and Electrophysiology Center, IRCCS Policlinico San Donato, Milan, Italy  
