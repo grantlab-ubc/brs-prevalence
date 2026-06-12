@@ -3,7 +3,7 @@
 Hierarchical Monte Carlo Simulation of BrS Ascertainment
 (50,000,000 simulated carriers)
 
-This script reproduces the key metrics for Table 6 in the manuscript using a
+This script reproduces the key metrics for Supplemental Table 5 in the manuscript using a
 heterogeneous probability model for Brugada Type 1 ECG detection.
 
 Model Overview
